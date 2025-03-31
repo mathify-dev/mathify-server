@@ -1,10 +1,11 @@
-import express from "express";
+import express, { application } from "express";
 import passport from "passport";
 import authRoutes from "./routes/auth.js";
 import apiRoutes from "./routes/api.js";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import "./config/passport.js";
+
 
 dotenv.config();
 
@@ -22,5 +23,6 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/api", apiRoutes);
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

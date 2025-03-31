@@ -18,14 +18,14 @@ router.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
-    failureRedirect: `${process.env.CLIENT_BASE_URL}`,
+    failureRedirect: `${process.env.CLIENT_BASE_URL}/fallback`,
   }),
   (req, res) => {
     const { user, token } = req.user;
     res.redirect(
       `${process.env.CLIENT_BASE_URL}/callback?token=${token}&googleId=${
         user.googleId
-      }&name=${encodeURIComponent(user.displayName)}&email=${user.email}`
+      }&name=${encodeURIComponent(user.name)}&email=${user.email}`
     );
   }
 );
