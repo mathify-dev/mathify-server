@@ -23,9 +23,9 @@ router.get(
   (req, res) => {
     const { user, token } = req.user;
     res.redirect(
-      `${process.env.CLIENT_BASE_URL}/callback?token=${token}&googleId=${
-        user.googleId
-      }&name=${encodeURIComponent(user.name)}&email=${user.email}`
+      `${process.env.CLIENT_BASE_URL}/callback?token=${token}&id=${
+        user.id
+      }&name=${encodeURIComponent(user.name)}&email=${user.email}&isAdmin=${user.isAdmin}`
     );
   }
 );

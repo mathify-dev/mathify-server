@@ -19,10 +19,10 @@ passport.use(
         return done(null, false, { message: "Student not found" });
       }
       const user = {
-        googleId: profile.id,
         name: student.name,
         email: student.email,
         isAdmin: student.isAdmin,
+        id:student._id
       };
       const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
       return done(null, { user, token });

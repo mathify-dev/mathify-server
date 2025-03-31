@@ -3,7 +3,7 @@ import verifyToken from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/profile", verifyToken, (req, res) => {
+router.get("/", verifyToken, (req, res) => {
   res.json(req.user); 
 });
 
