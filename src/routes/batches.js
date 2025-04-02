@@ -17,4 +17,35 @@ router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
+router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  const { name, feesPerHour, isActive } = req.body;
+
+  try {
+    const batch = await Batch.findByIdAndUpdate(
+      req.params.id,
+      { name, feesPerHour, isActive },
+      { new: true, runValidators: true }
+    );
+
+    if (!batch) return res.status(404).json({ message: "Batch not found" });
+
+    res.json({ message: "Batch updated", batch });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const batch = await Batch.findByIdAndDelete(req.params.id);
+    if (!batch) return res.status(404).json({ message: "Batch not found" });
+
+    res.json({ message: "Batch deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+
 export default router;
