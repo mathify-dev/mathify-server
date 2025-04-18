@@ -1,10 +1,15 @@
-import express from "express";
+import express, { application } from "express";
 import passport from "passport";
 import authRoutes from "./routes/auth.js";
-import apiRoutes from "./routes/api.js";
+import profileRoutes from "./routes/profile.js";
+import batchesRoute from "./routes/batches.js"
+import studentsRoute from "./routes/students.js"
+import attendanceRoute from "./routes/attendance.js"
+import feesRoute from "./routes/fee.js"
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import "./config/passport.js";
+
 
 dotenv.config();
 
@@ -21,6 +26,11 @@ app.get("/", (req, res) => {
 });
 
 app.use("/auth", authRoutes);
-app.use("/api", apiRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/batches",batchesRoute)
+app.use("/api/students",studentsRoute)
+app.use("/api/attendance",attendanceRoute)
+app.use("/api/fees",feesRoute)
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
