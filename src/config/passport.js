@@ -22,9 +22,10 @@ passport.use(
         name: student.name,
         email: student.email,
         isAdmin: student.isAdmin,
+        avatar:profile.photos[0]?.value,
         id:student._id
       };
-      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "24h" });
       return done(null, { user, token });
     }
   )

@@ -8,6 +8,7 @@ import attendanceRoute from "./routes/attendance.js"
 import feesRoute from "./routes/fee.js"
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
+import cors from 'cors'
 import "./config/passport.js";
 
 
@@ -15,6 +16,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.use(cors());
 
 connectDB();
 

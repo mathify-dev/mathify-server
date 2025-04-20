@@ -4,8 +4,17 @@ import Batch from "../models/Batch.js";
 import authMiddleware from "../middleware/auth.js";
 import adminMiddleware from "../middleware/admin.js";
 
+router.get("/getAllBatches", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const batches = await Batch.find().sort({ createdAt: -1 });
+    res.status(200).json(batches);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch batches", error });
+  }
+});
 
-router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
+
+router.post("/createNewBatch", authMiddleware, adminMiddleware, async (req, res) => {
   const { name, feesPerHour } = req.body;
 
   try {

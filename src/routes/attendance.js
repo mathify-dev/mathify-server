@@ -4,20 +4,30 @@ import Attendance from "../models/Attendance.js";
 import authMiddleware from "../middleware/auth.js";
 import adminMiddleware from "../middleware/admin.js";
 
-router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
-  const { student, hours, date, isPresent } = req.body;
+router.post("/addAttendance", authMiddleware, adminMiddleware, async (req, res) => {
+  const attendanceRecords = req.body; // Expecting an array of records
 
-  const specificDate = new Date(date + "T00:00:00.000Z")
+  // Validate that the request body is an array
+  if (!Array.isArray(attendanceRecords)) {
+    return res.status(400).json({ message: "Request body must be an array of attendance records" });
+  }
 
   try {
-    const attendance = new Attendance({
-      student,
-      hours,
-      date: specificDate,
-      isPresent,
+    // Transform each record to match the Attendance schema
+    const recordsToInsert = attendanceRecords.map((record) => ({
+      student: record.student,
+      hours: record.hours,
+      date: new Date(record.date + "T00:00:00.000Z"), // Convert date string to Date object
+      isPresent: record.isPresent,
+    }));
+
+    // Insert all records into the database
+    const insertedRecords = await Attendance.insertMany(recordsToInsert);
+
+    res.status(201).json({
+      message: "Attendance records created successfully",
+      attendance: insertedRecords,
     });
-    await attendance.save();
-    res.status(201).json({ message: "Attendance recorded", attendance });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
