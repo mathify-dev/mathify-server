@@ -25,7 +25,7 @@ router.get(
     res.redirect(
       `${process.env.CLIENT_BASE_URL}/callback?token=${token}&id=${
         user.id
-      }&name=${encodeURIComponent(user.name)}&email=${user.email}&isAdmin=${user.isAdmin}`
+      }&name=${encodeURIComponent(user.name)}&email=${user.email}&isAdmin=${user.isAdmin}&avatar=${user.avatar}`
     );
   }
 );
