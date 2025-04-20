@@ -24,9 +24,9 @@ connectDB();
 app.use(express.json());
 app.use(passport.initialize());
 
-app.get("/", (req, res) => {
-  res.send("<a href='/auth/google'>Login with Google</a>");
-});
+// app.get("/", (req, res) => {
+//   res.send("<a href='/auth/google'>Login with Google</a>");
+// });
 
 app.use("/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
