@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import cors from 'cors'
 import "./config/passport.js";
-import {sendMonthlyInvoices} from "./services/cronJob.js"
+import {sendMonthlyInvoices , scheduleMonthlyInvoices} from "./services/cronJob.js"
 
 
 dotenv.config();
@@ -28,6 +28,9 @@ app.use(passport.initialize());
 // app.get("/", (req, res) => {
 //   res.send("<a href='/auth/google'>Login with Google</a>");
 // });
+
+
+// scheduleMonthlyInvoices()
 
 app.use("/auth", authRoutes);
 app.use("/api/profile", profileRoutes);

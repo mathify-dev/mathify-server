@@ -8,6 +8,8 @@ import Attendance from "../models/Attendance.js";
 import dayjs from "dayjs";
 import moment from "moment";
 import PDFDocument from "pdfkit";
+import generateInvoicePDF from "../services/invoiceService.js";
+import sendInvoiceEmail from "../services/emailService.js";
 
 
 
@@ -111,7 +113,9 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     const rate = student.feesPerHour;
     const totalAmount = rate * totalHours;
 
-    const invoiceNumber = `INV-${Date.now()}`;
+    const invoiceNumber = `INV-${student._id.toString()}-${moment(
+      month
+    ).format("YYYYMM")}`;
 
     // Create PDF
     const doc = new PDFDocument({ margin: 50 });
@@ -229,6 +233,36 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error generating invoice" });
   }
 });
+
+router.post("/sendStudentInvoice",authMiddleware,adminMiddleware,async(req,res) => {
+  const {studentId , month} = req.body
+
+  if (!studentId || !month) {
+    return res
+      .status(400)
+      .json({ error: "studentId and month are required" });
+  }
+
+  const student = await Student.findById(studentId);
+  if (!student) return res.status(404).json({ message: "Student not found" });
+
+  const monthName = moment(month, "YYYY-MM").format("MMMM YYYY")
+
+  try {
+    const invoiceData = await generateInvoicePDF(student, month);
+    const emailResult = await sendInvoiceEmail(
+      student.email,
+      student.name,
+      invoiceData.buffer,
+      invoiceData.invoiceNumber,
+      monthName
+    ); 
+    res.json({ message : `email Sent sucessfully to ${student.email}` });
+  } catch (error) {
+    console.error(`Failed to send invoice to ${studentEmail}:`, error);
+    res.status(500).json({ message: "Error generating invoice" });
+  }
+})
 
 router.post(
   "/createNewFees",

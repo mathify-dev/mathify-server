@@ -11,14 +11,21 @@ const dayScheduleSchema = new Schema(
 
 const studentSchema = new Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
-  isActive: { type: Boolean, default: false },
-  registrationNumber: { type: Number, required: true },
-  feesPerHour: { type: Number, required: true, min: 0 },
+  email: { type: String, required: true, unique: true },
+  parentsName:{ type: String, required: true },
+  dateOfBirth:{ type: String, required: true },
+  gender:{ type: String, required: true },
+  preferredModeOfLearning:{ type: String, required: true },
+  desiredNumberOfHours:{ type: Number, required: true },
+  goodAtMaths:{ type: Number, required: true },//rating out of 10
+  wishToHaveDemoClass:{ type: Boolean, required: true }, // true or false
+  objectiveOfEnrolling:{ type: String, required: true },
+  examinationsTargetting:{ type: String, required: true },
+  registrationNumber: { type: Number}, // sheet sequence number
+  isActive: { type: Boolean, default: true },
+  feesPerHour: { type: Number, min: 0 },
   createdAt: { type: Date, default: Date.now },
-
   // Schedule: optional object with selected weekdays
   schedule: {
     type: Map,
