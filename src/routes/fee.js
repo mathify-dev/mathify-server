@@ -11,81 +11,75 @@ import PDFDocument from "pdfkit";
 import generateInvoicePDF from "../services/invoiceService.js";
 import sendInvoiceEmail from "../services/emailService.js";
 
+router.get("/getStudentFees/:studentId", authMiddleware, async (req, res) => {
+  const { studentId } = req.params;
+  const userId = req.user.id;
+  const isAdmin = req.user.isAdmin;
 
-
-router.get(
-  "/getStudentFees/:studentId",
-  authMiddleware,
-  async (req, res) => {
-    const { studentId } = req.params;
-    const userId = req.user.id;
-    const isAdmin = req.user.isAdmin;
-
-    if (userId !== studentId && !isAdmin) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
-    try {
-      const student = await Student.findById(studentId);
-      if (!student) {
-        return res.status(404).json({ error: "Student not found" });
-      }
-
-      // Get all attendance records for the student
-      const attendanceRecords = await Attendance.find({ student: studentId });
-
-      // Group attendance by month (YYYY-MM)
-      const feesMap = {};
-
-      for (const record of attendanceRecords) {
-        const date = new Date(record.date);
-        const monthKey = `${date.getFullYear()}-${String(
-          date.getMonth() + 1
-        ).padStart(2, "0")}`;
-
-        if (!feesMap[monthKey]) {
-          feesMap[monthKey] = {
-            totalHours: 0,
-            payableAmount: 0,
-            isSettled: false,
-          };
-        }
-
-        feesMap[monthKey].totalHours += record.hours || 0;
-      }
-
-      // Multiply total hours with feesPerHour and check payment status
-      for (const month of Object.keys(feesMap)) {
-        feesMap[month].payableAmount = Math.round(
-          feesMap[month].totalHours * student.feesPerHour
-        );
-
-        const feeRecord = await Fees.findOne({
-          student: studentId,
-          billingMonth: month,
-        });
-
-        if (feeRecord) {
-          feesMap[month].isSettled = feeRecord.isSettled;
-          feesMap[month].paidOn = feeRecord.paidOn;
-          feesMap[month].paymentMethod = feeRecord.paymentMethod;
-        }
-      }
-
-      res.json({
-        student: {
-          name: student.name,
-          email: student.email,
-          feesPerHour: student.feesPerHour,
-        },
-        feesSummary: feesMap,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Something went wrong" });
-    }
+  if (userId !== studentId && !isAdmin) {
+    return res.status(403).json({ message: "Unauthorized" });
   }
-);
+
+  try {
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    // Get all attendance records for the student
+    const attendanceRecords = await Attendance.find({ student: studentId });
+
+    // Group attendance by month (YYYY-MM)
+    const feesMap = {};
+
+    for (const record of attendanceRecords) {
+      const date = new Date(record.date);
+      const monthKey = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      if (!feesMap[monthKey]) {
+        feesMap[monthKey] = {
+          totalHours: 0,
+          payableAmount: 0,
+          isSettled: false,
+        };
+      }
+
+      feesMap[monthKey].totalHours += record.hours || 0;
+    }
+
+    // Multiply total hours with feesPerHour and check payment status
+    for (const month of Object.keys(feesMap)) {
+      feesMap[month].payableAmount = Math.round(
+        feesMap[month].totalHours * student.feesPerHour
+      );
+
+      const feeRecord = await Fees.findOne({
+        student: studentId,
+        billingMonth: month,
+      });
+
+      if (feeRecord) {
+        feesMap[month].isSettled = feeRecord.isSettled;
+        feesMap[month].paidOn = feeRecord.paidOn;
+        feesMap[month].paymentMethod = feeRecord.paymentMethod;
+      }
+    }
+
+    res.json({
+      student: {
+        name: student.name,
+        email: student.email,
+        feesPerHour: student.feesPerHour,
+      },
+      feesSummary: feesMap,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
   const { studentId } = req.params;
@@ -109,18 +103,24 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
       isPresent: true,
     });
 
-    const totalHours = attendances.reduce((sum, att) => sum + (att.hours || 0), 0);
+    const totalHours = attendances.reduce(
+      (sum, att) => sum + (att.hours || 0),
+      0
+    );
     const rate = student.feesPerHour;
     const totalAmount = rate * totalHours;
 
-    const invoiceNumber = `INV-${student._id.toString()}-${moment(
-      month
-    ).format("YYYYMM")}`;
+    const invoiceNumber = `INV-${student._id.toString()}-${moment(month).format(
+      "YYYYMM"
+    )}`;
 
     // Create PDF
     const doc = new PDFDocument({ margin: 50 });
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename=invoice-${invoiceNumber}.pdf`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=invoice-${invoiceNumber}.pdf`
+    );
     doc.pipe(res);
 
     // Header Section
@@ -131,7 +131,10 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
 
     // Invoice details (right side)
     doc.fontSize(20).font("Helvetica-Bold").text("INVOICE", 250, currentY);
-    doc.fontSize(12).font("Helvetica").text(`Invoice #: ${invoiceNumber}`, 400, currentY + 30);
+    doc
+      .fontSize(12)
+      .font("Helvetica")
+      .text(`Invoice #: ${invoiceNumber}`, 400, currentY + 30);
     doc.text(`Date: ${moment().format("YYYY-MM-DD")}`, 400, currentY + 55);
 
     currentY += 100;
@@ -152,7 +155,13 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     doc.font("Helvetica-Bold");
     doc.text("PERIOD:", 400, currentY);
     doc.font("Helvetica");
-    doc.text(`${moment(startOfMonth).format("DD MMM YYYY")} to ${moment(endOfMonth).format("DD MMM YYYY")}`, 400, currentY + 20);
+    doc.text(
+      `${moment(startOfMonth).format("DD MMM YYYY")} to ${moment(
+        endOfMonth
+      ).format("DD MMM YYYY")}`,
+      400,
+      currentY + 20
+    );
 
     currentY += 140;
 
@@ -161,7 +170,7 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     doc.text("STUDENT DETAILS:", 50, currentY);
     doc.font("Helvetica");
     currentY += 20;
-    
+
     doc.text(`Name: ${student.name}`, 50, currentY);
     doc.text(`Email: ${student.email}`, 50, currentY + 15);
     doc.text(`Phone: ${student.phone}`, 50, currentY + 30);
@@ -172,7 +181,7 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     // Table Section
     const tableTop = currentY;
     const tableLeft = 50;
-    const col1X = tableLeft;      // S.No.
+    const col1X = tableLeft; // S.No.
     const col2X = tableLeft + 60; // Service
     const col3X = tableLeft + 200; // Hrs
     const col4X = tableLeft + 260; // Rate
@@ -180,7 +189,7 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
 
     // Table header with borders
     doc.rect(tableLeft, tableTop, 400, 25).stroke();
-    
+
     // Header text
     doc.font("Helvetica-Bold").fontSize(11);
     doc.text("S.No.", col1X + 5, tableTop + 8);
@@ -190,15 +199,27 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     doc.text("Amount", col5X + 5, tableTop + 8);
 
     // Vertical lines for header
-    doc.moveTo(col2X, tableTop).lineTo(col2X, tableTop + 25).stroke();
-    doc.moveTo(col3X, tableTop).lineTo(col3X, tableTop + 25).stroke();
-    doc.moveTo(col4X, tableTop).lineTo(col4X, tableTop + 25).stroke();
-    doc.moveTo(col5X, tableTop).lineTo(col5X, tableTop + 25).stroke();
+    doc
+      .moveTo(col2X, tableTop)
+      .lineTo(col2X, tableTop + 25)
+      .stroke();
+    doc
+      .moveTo(col3X, tableTop)
+      .lineTo(col3X, tableTop + 25)
+      .stroke();
+    doc
+      .moveTo(col4X, tableTop)
+      .lineTo(col4X, tableTop + 25)
+      .stroke();
+    doc
+      .moveTo(col5X, tableTop)
+      .lineTo(col5X, tableTop + 25)
+      .stroke();
 
     // Table row with borders
     const rowTop = tableTop + 25;
     doc.rect(tableLeft, rowTop, 400, 25).stroke();
-    
+
     // Row data
     doc.font("Helvetica").fontSize(10);
     doc.text("1", col1X + 5, rowTop + 8);
@@ -208,10 +229,22 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
     doc.text(`${totalAmount}`, col5X + 5, rowTop + 8);
 
     // Vertical lines for row
-    doc.moveTo(col2X, rowTop).lineTo(col2X, rowTop + 25).stroke();
-    doc.moveTo(col3X, rowTop).lineTo(col3X, rowTop + 25).stroke();
-    doc.moveTo(col4X, rowTop).lineTo(col4X, rowTop + 25).stroke();
-    doc.moveTo(col5X, rowTop).lineTo(col5X, rowTop + 25).stroke();
+    doc
+      .moveTo(col2X, rowTop)
+      .lineTo(col2X, rowTop + 25)
+      .stroke();
+    doc
+      .moveTo(col3X, rowTop)
+      .lineTo(col3X, rowTop + 25)
+      .stroke();
+    doc
+      .moveTo(col4X, rowTop)
+      .lineTo(col4X, rowTop + 25)
+      .stroke();
+    doc
+      .moveTo(col5X, rowTop)
+      .lineTo(col5X, rowTop + 25)
+      .stroke();
 
     currentY = rowTop + 50;
 
@@ -234,35 +267,40 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/sendStudentInvoice",authMiddleware,adminMiddleware,async(req,res) => {
-  const {studentId , month} = req.body
+router.post(
+  "/sendStudentInvoice",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    const { studentId, month } = req.body;
 
-  if (!studentId || !month) {
-    return res
-      .status(400)
-      .json({ error: "studentId and month are required" });
+    if (!studentId || !month) {
+      return res
+        .status(400)
+        .json({ error: "studentId and month are required" });
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+
+    const monthName = moment(month, "YYYY-MM").format("MMMM YYYY");
+
+    try {
+      const invoiceData = await generateInvoicePDF(student, month);
+      const emailResult = await sendInvoiceEmail(
+        student.email,
+        student.name,
+        invoiceData.buffer,
+        invoiceData.invoiceNumber,
+        monthName
+      );
+      res.json({ message: `email Sent sucessfully to ${student.email}` });
+    } catch (error) {
+      console.error(`Failed to send invoice to ${studentEmail}:`, error);
+      res.status(500).json({ message: "Error generating invoice" });
+    }
   }
-
-  const student = await Student.findById(studentId);
-  if (!student) return res.status(404).json({ message: "Student not found" });
-
-  const monthName = moment(month, "YYYY-MM").format("MMMM YYYY")
-
-  try {
-    const invoiceData = await generateInvoicePDF(student, month);
-    const emailResult = await sendInvoiceEmail(
-      student.email,
-      student.name,
-      invoiceData.buffer,
-      invoiceData.invoiceNumber,
-      monthName
-    ); 
-    res.json({ message : `email Sent sucessfully to ${student.email}` });
-  } catch (error) {
-    console.error(`Failed to send invoice to ${studentEmail}:`, error);
-    res.status(500).json({ message: "Error generating invoice" });
-  }
-})
+);
 
 router.post(
   "/createNewFees",
@@ -372,9 +410,5 @@ router.delete(
     }
   }
 );
-
-
-
-
 
 export default router;

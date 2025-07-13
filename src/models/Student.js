@@ -16,12 +16,12 @@ const studentSchema = new Schema({
   parentsName:{ type: String, required: true },
   dateOfBirth:{ type: String, required: true },
   gender:{ type: String, required: true },
-  preferredModeOfLearning:{ type: String, required: true },
-  desiredNumberOfHours:{ type: Number, required: true },
-  goodAtMaths:{ type: Number, required: true },//rating out of 10
-  wishToHaveDemoClass:{ type: Boolean, required: true }, // true or false
-  objectiveOfEnrolling:{ type: String, required: true },
-  examinationsTargetting:{ type: String, required: true },
+  preferredModeOfLearning:{ type: String },
+  desiredNumberOfHours:{ type: Number },
+  goodAtMaths:{ type: Number },//rating out of 10
+  wishToHaveDemoClass:{ type: Boolean }, // true or false
+  objectiveOfEnrolling:{ type: String },
+  examinationsTargetting:{ type: String },
   registrationNumber: { type: Number}, // sheet sequence number
   isActive: { type: Boolean, default: true },
   feesPerHour: { type: Number, min: 0 },

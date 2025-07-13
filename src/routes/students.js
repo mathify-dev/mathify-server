@@ -64,7 +64,27 @@ router.post(
       headers.forEach((key, idx) => {
         result[key] = dataRow[idx] || null;
       });
-      res.json({ success: true, data: result });
+      const mappedStudent = {
+        name: result["Student's Name"],
+        phone: result["Contact Number (Whatsapp)"],
+        email: result["Student's Email ID"],
+        parentsName: result["Parent's Name"],
+        dateOfBirth: result["Date of Birth"],
+        gender: result["Student's Gender"],
+        preferredModeOfLearning: result["Preferred Mode of Learning"],
+        desiredNumberOfHours: result["Desired number of hours per week"]
+          ? Number(result["Desired number of hours per week"])
+          : null,
+        goodAtMaths: result["On a scale of 1 to 10, how good do you think is the student at Maths?"]
+          ? Number(result["On a scale of 1 to 10, how good do you think is the student at Maths?"])
+          : null,
+        wishToHaveDemoClass:
+          result["Do you wish to have a demo class?"]?.toLowerCase() === "yes",
+        objectiveOfEnrolling: result["What is your objective of enrolling with Mathify?"],
+        examinationsTargetting: result["Please write the names of all the examinations that the students is targeting."],
+      };
+      
+      res.json({ success: true, data: mappedStudent });
     } catch (err) {
       console.error("Error fetching row:", err);
       res.status(500).json({ error: "Internal server error" });
