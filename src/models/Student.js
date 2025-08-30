@@ -13,9 +13,9 @@ const studentSchema = new Schema({
   name: { type: String, required: true },
   phone: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  parentsName:{ type: String, required: true },
-  dateOfBirth:{ type: String, required: true },
-  gender:{ type: String, required: true },
+  parentsName:{ type: String},
+  dateOfBirth:{ type: String},
+  gender:{ type: String},
   preferredModeOfLearning:{ type: String },
   desiredNumberOfHours:{ type: Number },
   goodAtMaths:{ type: Number },//rating out of 10

@@ -143,10 +143,7 @@ router.post(
 
       // Check for required fields
       if (
-        !name || !email || !phone || !parentsName || !dateOfBirth ||
-        !gender || !preferredModeOfLearning || desiredNumberOfHours == null ||
-        goodAtMaths == null || wishToHaveDemoClass == null ||
-        !objectiveOfEnrolling || !examinationsTargetting
+        !name || !email || !phone 
       ) {
         return res.status(400).json({ error: "Missing required fields" });
       }
@@ -184,8 +181,11 @@ router.post(
         student
       });
 
-    } catch (err) {
+    }  catch (err) {
       console.error("Error creating student:", err);
+      if (err.name === "ValidationError") {
+        return res.status(400).json({ error: err.message });
+      }
       return res.status(500).json({ error: "Server error while registering student" });
     }
   }
@@ -193,18 +193,45 @@ router.post(
 
 
 router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  const { name, email, phone, batch, isAdmin } = req.body;
-
   try {
+    // pick only valid fields from body to avoid unwanted injection
+    const allowedUpdates = [
+      "name",
+      "phone",
+      "email",
+      "parentsName",
+      "dateOfBirth",
+      "gender",
+      "preferredModeOfLearning",
+      "desiredNumberOfHours",
+      "goodAtMaths",
+      "wishToHaveDemoClass",
+      "objectiveOfEnrolling",
+      "examinationsTargetting",
+      "registrationNumber",
+      "isActive",
+      "feesPerHour",
+      "schedule",
+    ];
+
+    const updates = {};
+    for (const key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+
     const student = await Student.findByIdAndUpdate(
       req.params.id,
-      { name, email, phone, batch, isAdmin },
+      updates,
       { new: true, runValidators: true }
     );
 
-    if (!student) return res.status(404).json({ message: "Student not found" });
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
 
-    res.json({ message: "Student updated", student });
+    res.json({ message: "Student updated successfully", student });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
