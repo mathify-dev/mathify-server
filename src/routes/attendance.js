@@ -10,7 +10,7 @@ router.get("/getAttendance/:studentId", authMiddleware, async (req, res) => {
     const { studentId } = req.params;
 
     // Check if the user is either admin or the student themself
-    if (!req.user.isAdmin && req.user._id !== studentId) {
+    if (!req.user.isAdmin && req.user.id !== studentId) {
       return res.status(403).json({ error: "Access denied" });
     }
 

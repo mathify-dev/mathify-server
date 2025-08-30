@@ -73,7 +73,12 @@ router.get("/getStudentFees/:studentId", authMiddleware, async (req, res) => {
         email: student.email,
         feesPerHour: student.feesPerHour,
       },
-      feesSummary: feesMap,
+      feesSummary: Object.entries(feesMap)
+        .map(([month, data]) => ({
+          billingMonth: month,
+          ...data,
+        }))
+        .sort((a, b) => b.billingMonth.localeCompare(a.billingMonth)) // descending
     });
   } catch (error) {
     console.error(error);
@@ -86,7 +91,7 @@ router.get("/generateInvoice/:studentId", authMiddleware, async (req, res) => {
   const { month } = req.query;
   const requester = req.user;
 
-  if (!requester.isAdmin && requester._id !== studentId) {
+  if (!requester.isAdmin && requester.id !== studentId) {
     return res.status(403).json({ message: "Unauthorized" });
   }
 
