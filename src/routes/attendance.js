@@ -39,7 +39,7 @@ router.post(
       }
 
       const record = new Attendance({
-        studentId,
+        student: studentId,
         startTime,
         endTime,
         isPresent,

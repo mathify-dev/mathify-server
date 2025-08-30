@@ -33,11 +33,13 @@ router.get("/getStudentFees/:studentId", authMiddleware, async (req, res) => {
     const feesMap = {};
 
     for (const record of attendanceRecords) {
+      if (!record.isPresent) continue; // skip absentees
+    
       const date = new Date(record.date);
       const monthKey = `${date.getFullYear()}-${String(
         date.getMonth() + 1
       ).padStart(2, "0")}`;
-
+    
       if (!feesMap[monthKey]) {
         feesMap[monthKey] = {
           totalHours: 0,
@@ -45,7 +47,7 @@ router.get("/getStudentFees/:studentId", authMiddleware, async (req, res) => {
           isSettled: false,
         };
       }
-
+    
       feesMap[monthKey].totalHours += record.hours || 0;
     }
 
