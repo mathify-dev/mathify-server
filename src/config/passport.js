@@ -14,7 +14,7 @@ passport.use(
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
-      const student = await Student.findOne({ email: profile.emails[0].value });
+      const student = await Student.findOne({ email: profile.emails[0].value }).lean();
       if (!student) {
         return done(null, false, { message: "Student not found" });
       }

@@ -3,66 +3,113 @@ const router = Router();
 import Attendance from "../models/Attendance.js";
 import authMiddleware from "../middleware/auth.js";
 import adminMiddleware from "../middleware/admin.js";
+import Student from "../models/Student.js";
 
-router.post("/addAttendance", authMiddleware, adminMiddleware, async (req, res) => {
-  const attendanceRecords = req.body; // Expecting an array of records
-
-  // Validate that the request body is an array
-  if (!Array.isArray(attendanceRecords)) {
-    return res.status(400).json({ message: "Request body must be an array of attendance records" });
-  }
-
+router.get("/getAttendance/:studentId", authMiddleware, async (req, res) => {
   try {
-    // Transform each record to match the Attendance schema
-    const recordsToInsert = attendanceRecords.map((record) => ({
-      student: record.student,
-      hours: record.hours,
-      date: new Date(record.date + "T00:00:00.000Z"), // Convert date string to Date object
-      isPresent: record.isPresent,
-    }));
+    const { studentId } = req.params;
 
-    // Insert all records into the database
-    const insertedRecords = await Attendance.insertMany(recordsToInsert);
+    // Check if the user is either admin or the student themself
+    if (!req.user.isAdmin && req.user.id !== studentId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
 
-    res.status(201).json({
-      message: "Attendance records created successfully",
-      attendance: insertedRecords,
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
+    const records = await Attendance.find({ student: studentId }).sort({
+      date: -1,
+    })
+    // .populate('student'); // optional, if you want full student details
+
+    res.json({ data: records });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  const { student, hours, date, isPresent } = req.body;
-  const specificDate = new Date(date + "T00:00:00.000Z");
+router.post(
+  "/addAttendance",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { studentId, startTime, endTime, date, isPresent = true } = req.body;
 
-  try {
-    const attendance = await Attendance.findByIdAndUpdate(
-      req.params.id,
-      { student, hours, date: specificDate, isPresent },
-      { new: true, runValidators: true }
-    );
+      const studentExists = await Student.findById(studentId);
+      if (!studentExists) {
+        return res.status(404).json({ error: 'Student not found' });
+      }
 
-    if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
+      const record = new Attendance({
+        student: studentId,
+        startTime,
+        endTime,
+        isPresent,
+        date: new Date(date + "T00:00:00.000Z"),
+      });
 
-    res.json({ message: "Attendance updated", attendance });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
+      await record.validate(); // ensure schema validation
+      await record.save();
+
+      res
+        .status(201)
+        .json({ message: "Attendance added successfully", data: record });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   }
-});
+);
 
-router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const attendance = await Attendance.findByIdAndDelete(req.params.id);
-    if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
+router.put(
+  "/updateAttendance/:id",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { startTime, endTime, date, isPresent } = req.body;
 
-    res.json({ message: "Attendance record deleted" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+      const updateData = {};
+
+      if (startTime) updateData.startTime = startTime;
+      if (endTime) updateData.endTime = endTime;
+      if (isPresent !== undefined) updateData.isPresent = isPresent;
+      if (date) updateData.date = new Date(date + "T00:00:00.000Z");
+
+      const attendance = await Attendance.findById(req.params.id);
+
+      if (!attendance) {
+        return res.status(404).json({ error: "Attendance not found" });
+      }
+
+      Object.assign(attendance, updateData);
+      await attendance.validate(); // triggers validation and `pre` middleware
+      await attendance.save();
+
+      res.json({
+        message: "Attendance updated successfully",
+        data: attendance,
+      });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   }
-});
+);
 
+router.delete(
+  "/deleteAttendance/:id",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const attendance = await Attendance.findByIdAndDelete(req.params.id);
 
+      if (!attendance) {
+        return res.status(404).json({ error: "Attendance not found" });
+      }
+
+      res.json({ message: "Attendance deleted successfully" });
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+);
 
 export default router;

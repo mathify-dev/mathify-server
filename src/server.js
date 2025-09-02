@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import cors from 'cors'
 import "./config/passport.js";
+import {sendMonthlyInvoices , scheduleMonthlyInvoices} from "./services/cronJob.js"
 
 
 dotenv.config();
@@ -28,12 +29,25 @@ app.use(passport.initialize());
 //   res.send("<a href='/auth/google'>Login with Google</a>");
 // });
 
+
+// scheduleMonthlyInvoices()
+
 app.use("/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/batches",batchesRoute)
 app.use("/api/students",studentsRoute)
 app.use("/api/attendance",attendanceRoute)
 app.use("/api/fees",feesRoute)
+
+app.post('/api/admin/send-monthly-invoices', async (req, res) => {
+    try {
+
+      await sendMonthlyInvoices();
+      res.json({ message: 'Monthly invoices sent successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error sending invoices', error: error.message });
+    }
+  });
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
