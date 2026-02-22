@@ -21,9 +21,9 @@ const attendanceSchema = new Schema({
 
   endTime: {
     type: String,
-    required: true,
+    required: false,
     validate: {
-      validator: (v) => timeRegex.test(v),
+      validator: (v) => v == null || v === '' || timeRegex.test(v),
       message: (props) => `${props.value} is not a valid time in HH:mm format.`,
     },
   },
@@ -43,11 +43,11 @@ const attendanceSchema = new Schema({
     type: Boolean,
     default: true,
   },
-});
+}, { timestamps: true });
 
-// Validate endTime is after startTime
+// Validate endTime is after startTime (only when both are provided)
 attendanceSchema.pre('validate', function (next) {
-  if (this.startTime && this.endTime) {
+  if (this.startTime && this.endTime && this.endTime.trim() !== '') {
     const [sh, sm] = this.startTime.split(':').map(Number);
     const [eh, em] = this.endTime.split(':').map(Number);
 
@@ -63,7 +63,7 @@ attendanceSchema.pre('validate', function (next) {
 
 // Calculate hours before saving
 attendanceSchema.pre('save', function (next) {
-  if (this.startTime && this.endTime) {
+  if (this.startTime && this.endTime && this.endTime.trim() !== '') {
     const [sh, sm] = this.startTime.split(':').map(Number);
     const [eh, em] = this.endTime.split(':').map(Number);
 
@@ -72,7 +72,7 @@ attendanceSchema.pre('save', function (next) {
     const diffMinutes = end - start;
 
     const rawHours = diffMinutes / 60;
-    this.hours = Math.round(rawHours * 2) / 2; // round to nearest 0.5
+    this.hours = Math.round(rawHours * 4) / 4; // round to nearest 0.25 (15 mins)
   } else {
     this.hours = 0;
   }

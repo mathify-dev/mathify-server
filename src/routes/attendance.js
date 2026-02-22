@@ -16,6 +16,7 @@ router.get("/getAttendance/:studentId", authMiddleware, async (req, res) => {
 
     const records = await Attendance.find({ student: studentId }).sort({
       date: -1,
+      createdAt: -1,
     })
     // .populate('student'); // optional, if you want full student details
 
@@ -38,12 +39,51 @@ router.post(
         return res.status(404).json({ error: 'Student not found' });
       }
 
+      const recordDate = new Date(date + "T00:00:00.000Z");
+
+      // Check for an open session (no endTime) for this student on the same date
+      const openSession = await Attendance.findOne({
+        student: studentId,
+        date: recordDate,
+        endTime: { $in: [null, undefined, ''] },
+      });
+
+      if (openSession) {
+        // Allow the new record only if both its startTime and endTime are
+        // strictly before the open session's startTime
+        if (endTime && startTime) {
+          const [osh, osm] = openSession.startTime.split(':').map(Number);
+          const [nsh, nsm] = startTime.split(':').map(Number);
+          const [neh, nem] = endTime.split(':').map(Number);
+
+          const openStart = osh * 60 + osm;
+          const newStart = nsh * 60 + nsm;
+          const newEnd = neh * 60 + nem;
+
+          if (newStart >= openStart || newEnd > openStart) {
+            return res.status(409).json({
+              error:
+                'A class session is currently in progress for this student today. ' +
+                'You can only add records with start and end times before the active session starts (' +
+                openSession.startTime + '). Please end the active session first.',
+            });
+          }
+        } else {
+          // Trying to start another open session while one is already open
+          return res.status(409).json({
+            error:
+              'A class session is already in progress for this student today (started at ' +
+              openSession.startTime + '). Please end the active session before starting a new one.',
+          });
+        }
+      }
+
       const record = new Attendance({
         student: studentId,
         startTime,
-        endTime,
+        endTime: endTime || undefined,
         isPresent,
-        date: new Date(date + "T00:00:00.000Z"),
+        date: recordDate,
       });
 
       await record.validate(); // ensure schema validation
